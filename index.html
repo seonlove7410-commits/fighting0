@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>오늘의 응원 한마디</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      font-size: 20px;
+      line-height: 1.5;
+      color: #2b2118;
+      background: #fff6e9;
+    }
+
+    main {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .intro {
+      margin: 0 0 28px;
+      color: #6b5a4a;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      padding: 16px;
+      font: inherit;
+      font-size: 22px;
+      color: inherit;
+      background: #fff;
+      border: 2px solid #e2c9a6;
+      border-radius: 14px;
+    }
+
+    .hint {
+      margin: 8px 0 20px;
+      font-size: 16px;
+      color: #6b5a4a;
+    }
+
+    button {
+      width: 100%;
+      min-height: 68px;
+      padding: 16px;
+      font: inherit;
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      background: #e8590c;
+      border: 0;
+      border-radius: 14px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #c9b8a6;
+      cursor: wait;
+    }
+
+    input:focus-visible,
+    button:focus-visible {
+      outline: 4px solid #1c7ed6;
+      outline-offset: 2px;
+    }
+
+    #result {
+      min-height: 140px;
+      margin-top: 24px;
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      background: #fff;
+      border: 2px solid #e2c9a6;
+      border-radius: 14px;
+    }
+
+    #result.empty,
+    #result.loading {
+      font-size: 20px;
+      font-weight: 400;
+      color: #6b5a4a;
+    }
+
+    #result.error {
+      font-size: 20px;
+      font-weight: 700;
+      color: #c92a2a;
+      background: #fff5f5;
+      border-color: #ffa8a8;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>오늘의 응원 한마디</h1>
+    <p class="intro">닉네임을 적고 버튼을 누르면 응원을 보내 드려요.</p>
+
+    <form id="cheer-form">
+      <label for="name">공개용 닉네임</label>
+      <input id="name" name="name" type="text" maxlength="20" autocomplete="off" placeholder="예: 햇살">
+      <p class="hint">비워 두면 "여러분"으로 불러 드려요. 실명 대신 닉네임을 적어 주세요.</p>
+      <button id="submit" type="submit">응원 받기</button>
+    </form>
+
+    <div id="result" class="empty" role="status" aria-live="polite">여기에 응원 한마디가 나타나요.</div>
+  </main>
+
+  <script>
+    const form = document.getElementById('cheer-form');
+    const nameInput = document.getElementById('name');
+    const button = document.getElementById('submit');
+    const result = document.getElementById('result');
+
+    function show(state, text) {
+      result.className = state;
+      result.textContent = text;
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      button.disabled = true;
+      button.textContent = '조회 중…';
+      show('loading', '응원 문장을 가져오는 중이에요…');
+
+      try {
+        // 상대 경로라서 Pages(하위 경로)와 Vercel(루트) 모두 같은 코드로 요청합니다.
+        const response = await fetch('api/message?name=' + encodeURIComponent(nameInput.value.trim()));
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const data = await response.json();
+        if (!data || typeof data.text !== 'string') throw new Error('잘못된 응답');
+
+        show('', data.text);
+      } catch (error) {
+        show('error', '응원 문장을 가져오지 못했어요. 서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.');
+      } finally {
+        button.disabled = false;
+        button.textContent = '응원 받기';
+      }
+    });
+  </script>
+</body>
+</html>
